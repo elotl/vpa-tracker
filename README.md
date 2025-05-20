@@ -2,14 +2,18 @@
 
 ## Install kube-state-metrics
 
-kube-state-metrics enables export of metrics associated with k8s resources.
+kube-state-metrics enables export of metrics associated with k8s resources such as deployments, jobs, etc.
+
+This is what allows us to export metrics from the VPA custom resource.
+
+We install kube-state-metrics using docs from here:
 
 https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-state-metrics
 
 
 ## Install Prometheus
 
-Prometheus is a open-source monitoring and alerting toolkit. It scrapes metrics from Kubernetes clusters.
+Prometheus is an open-source monitoring and alerting toolkit. It scrapes metrics from Kubernetes clusters.
 
 Install Prometheus using the steps here:
 
