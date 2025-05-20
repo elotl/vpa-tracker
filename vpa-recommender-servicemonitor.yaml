@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vpa-recommender
+  namespace: kube-system
+  labels:
+    release: luna-prometheus  # Match your Prometheus Operator's `serviceMonitorSelector`
+spec:
+  selector:
+    matchLabels:
+      app: vpa-recommender
+  endpoints:
+    - port: metrics
+      interval: 30s
+

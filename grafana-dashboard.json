@@ -1,0 +1,144 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 1,
+  "iteration": 1714390000000,
+  "panels": [
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cores"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "title": "CPU Requests vs VPA Recommendations",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(container_spec_cpu_requests{container!=\"\", namespace=~\".+\"}) by (container, namespace)",
+          "legendFormat": "{{container}} (req)",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(vpa_target_container_recommendation{resource=\"cpu\", namespace=~\".+\"}) by (container, namespace)",
+          "legendFormat": "{{container}} (vpa)",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 2,
+      "title": "Memory Requests vs VPA Recommendations",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(container_spec_memory_requests{container!=\"\", namespace=~\".+\"}) by (container, namespace)",
+          "legendFormat": "{{container}} (req)",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(vpa_target_container_recommendation{resource=\"memory\", namespace=~\".+\"}) by (container, namespace)",
+          "legendFormat": "{{container}} (vpa)",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cores"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "title": "VPA CPU Lower/Upper Bounds",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(vpa_recommendation_cpu_lower_bound{namespace=~\".+\"}) by (container, namespace)",
+          "legendFormat": "{{container}} (lower)",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(vpa_recommendation_cpu_upper_bound{namespace=~\".+\"}) by (container, namespace)",
+          "legendFormat": "{{container}} (upper)",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 4,
+      "title": "VPA Memory Lower/Upper Bounds",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(vpa_recommendation_memory_lower_bound{namespace=~\".+\"}) by (container, namespace)",
+          "legendFormat": "{{container}} (lower)",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(vpa_recommendation_memory_upper_bound{namespace=~\".+\"}) by (container, namespace)",
+          "legendFormat": "{{container}} (upper)",
+          "refId": "B"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 36,
+  "tags": ["vpa", "kubernetes", "prometheus"],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timezone": "",
+  "title": "Vertical Pod Autoscaler Overview",
+  "version": 1
+}
+
