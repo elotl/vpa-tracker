@@ -1,0 +1,53 @@
+---
+apiVersion: "autoscaling.k8s.io/v1"
+kind: VerticalPodAutoscaler
+metadata:
+  name: workload-c-vpa
+spec:
+  # recommenders field can be unset when using the default recommender.
+  # When using an alternative recommender, the alternative recommender's name
+  # can be specified as the following in a list.
+  # recommenders: 
+  #   - name: 'alternative'
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: workload-c
+  updatePolicy:
+    updateMode: "Auto"
+  resourcePolicy:
+    containerPolicies:
+      - containerName: '*'
+        minAllowed:
+          cpu: 100m
+          memory: 50Mi
+        maxAllowed:
+          cpu: 2
+          memory: 500Mi
+        controlledResources: ["cpu", "memory"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workload-c
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: workload-c
+  template:
+    metadata:
+      labels:
+        app: workload-c
+        elotl-luna: "true"
+    spec:
+      containers:
+        - name: workload-c
+          image: narmidm/k8s-pod-cpu-stressor:latest
+          args:
+            - "-cpu=1.0"
+            - "-duration=300s"
+            - "-forever"
+          resources:
+            requests:
+              cpu: "100m"
