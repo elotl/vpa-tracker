@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vpa-exporter
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vpa-exporter
+  template:
+    metadata:
+      labels:
+        app: vpa-exporter
+    spec:
+      serviceAccountName: vpa-exporter-sa
+      imagePullSecrets:
+        - name: dockerhub
+      containers:
+        - name: exporter
+          image: elotl/vpa-exporter:0.2
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vpa-exporter
+  namespace: monitoring
+  labels:
+    app: vpa-exporter
+spec:
+  selector:
+    app: vpa-exporter
+  ports:
+    - name: metrics
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vpa-exporter
+  namespace: monitoring
+  labels:
+    monitoring-key: enabled
+spec:
+  selector:
+    matchLabels:
+      app: vpa-exporter
+  namespaceSelector:
+    matchNames:
+      - monitoring
+  endpoints:
+    - port: metrics
+      interval: 30s
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vpa-exporter-sa
+  namespace: monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vpa-exporter-role
+rules:
+  - apiGroups: ["autoscaling.k8s.io"]
+    resources: ["verticalpodautoscalers"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vpa-exporter-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: vpa-exporter-role
+subjects:
+  - kind: ServiceAccount
+    name: vpa-exporter-sa
+    namespace: monitoring
+

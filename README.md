@@ -1,4 +1,4 @@
-# Pod resource consumption tracker
+# VPA Tracker to right size your pods
 
 ## Install kube-state-metrics
 
@@ -6,9 +6,66 @@ kube-state-metrics enables export of metrics associated with k8s resources such 
 
 This is what allows us to export metrics from the VPA custom resource.
 
+Project repo: https://github.com/kubernetes/kube-state-metrics
+
+
 We install kube-state-metrics using docs from here:
 
 https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-state-metrics
+
+```
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+helm install kube-state-metrics prometheus-community/kube-state-metrics [flags]
+```
+
+Its pod and svc is available as shown below:
+
+```
+% kubectl get svc                                
+NAME                 TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+kube-state-metrics   ClusterIP   10.100.242.107   <none>        8080/TCP   38m
+kubernetes           ClusterIP   10.100.0.1       <none>        443/TCP    40d
+selvik@Selvis-MacBook-Pro vpa-tracker % kubectl get pods                               
+NAME                                 READY   STATUS    RESTARTS   AGE
+kube-state-metrics-b49796bf8-sq7xv   1/1     Running   0          38m
+```
+
+Port forward the svc
+
+
+View the metrics in the URL: http://localhost:8080/metrics
+Home page of kube state metrics: http://localhost:8080/
+
+
+https://github.com/kubernetes/kube-state-metrics/blob/master/docs/README.md#exposed-metrics
+
+
+## Install Kube-Prometheus
+
+git clone git@github.com:prometheus-operator/kube-prometheus.git
+
+% kubectl apply --server-side -f manifests/setup --force-conflicts
+
+Wait for all services:
+
+kubectl wait \
+	--for condition=Established \
+	--all CustomResourceDefinition \
+	--namespace=monitoring
+
+Check all resources:
+kubectl get all -n monitoring
+
+
+kubectl apply -f manifests/
+
+View all GUIS
+kubectl --namespace monitoring port-forward svc/prometheus-k8s 9090
+kubectl --namespace monitoring port-forward svc/grafana 3000
+
+Ref: https://github.com/prometheus-operator/kube-prometheus/blob/main/docs/access-ui.md
+
 
 
 ## Install Prometheus
@@ -80,4 +137,4 @@ Once Prometheus starts scraping, you'll find metrics like:
 
     vpa_recommendation_memory_upper_bound
 
-
+S
