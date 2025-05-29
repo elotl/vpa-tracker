@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: vpa-weekly-alert
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: vpa-alerts
+      rules:
+        - alert: VPAWeeklyReport
+          expr: vpa_target_cpu_max_7d > 0
+          for: 1m
+          labels:
+            severity: info
+          annotations:
+            summary: "Weekly VPA CPU report"
+            description: "Max VPA CPU target over last 7 days: {{ $value }} millicores"
+

@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: vpa-slack-notify
+  namespace: monitoring
+  labels:
+    alertmanagerConfig: "enabled"
+spec:
+  route:
+    groupBy: ['alertname']
+    groupWait: 30s
+    groupInterval: 10m
+    repeatInterval: 7d
+    receiver: slack-vpa
+    matchers:
+      - name: alertname
+        value: VPAWeeklyReport
+        matchType: "="
+  receivers:
+    - name: slack-vpa
+      slackConfigs:
+        - channel: "#vpa-tracker-reports"
+          sendResolved: true
+          text: "{{ .CommonAnnotations.description }}"
+          apiURL:
+            name: slack-webhook-secret
+            key: url
+

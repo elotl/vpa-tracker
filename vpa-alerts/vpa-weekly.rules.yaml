@@ -1,0 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: vpa-weekly
+  namespace: monitoring   # same as Prometheus
+  labels:
+    release: kube-prometheus-stack # Must match Prometheus.ruleSelector
+spec:
+  groups:
+  - name: vpa-weekly
+    interval: 10m
+    rules:
+    - record: vpa_target_cpu_max_7d
+      expr: max_over_time(vpa_cpu_target_millicores{vpa_name="workload-c-vpa"}[10m])
