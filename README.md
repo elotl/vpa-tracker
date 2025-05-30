@@ -121,9 +121,7 @@ http://localhost:8080/metrics
 
 3. Viewing Grafana 
 
-
-% kubectl port-forward service/grafana 3000:3000 --namespace=my-grafana
-
+kubectl port-forward svc/kube-prometheus-stack-grafana -n monitoring 3000:80
 http://localhost:3000 
 
 
