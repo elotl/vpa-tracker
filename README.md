@@ -1,28 +1,34 @@
-# VPA Tracker to right size your pods
+# Right-Sizing Your Kubernetes Pods with a Custom VPA Tracker
 
+Context and background of this VPA Tracker is available on this Elotl Blog:[VPA Tracker](https://www.elotl.co/blog/vpa-tracker)
 
-## Create an EKS cluster
+In this README we provide detailed steps on how VPA Tracker stack was setup and used to track a sample deployment workload.
 
-cd /Users/selvik/stuff/selvi-docs/eks-luna
+## Create a Kubernetes Cluster
+
+```bash
 eksctl create cluster -f  sel-vpa-ekscluster-luna.yaml
+```
 
-
+```bash
 kubectl config rename-context selvi@sel-vpa.us-west-1.eksctl.io sel-vpa
+```
 
-## Install luna
+## Install Luna
 
-selvik@Selvis-MacBook-Pro eks % pwd
-/Users/selvik/stuff/luna/luna-v1.2.18/eks
-
-selvik@Selvis-MacBook-Pro eks % ./deploy.sh --name sel-vpa --region us-west-1 --additional-helm-values "--set loggingVerbosity=5 --set telemetry=false --debug"
-
+```bash
+% cd luna/luna-v1.2.18/eks
+% ./deploy.sh --name sel-vpa --region us-west-1 --additional-helm-values "--set loggingVerbosity=5 --set telemetry=false --debug"
+```
 
 ## Install Kube-prometheus-stack
 
 
+```bash
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 helm install prometheus prometheus-community/kube-prometheus-stack
+```
 
 Sucess message after install:
 
@@ -51,20 +57,26 @@ Visit https://github.com/prometheus-operator/kube-prometheus for instructions on
  
 ## Install VPA
 
-/Users/selvik/stuff/dev/autoscaler/vertical-pod-autoscaler
+We install VPA using instructions from here: [VPA Installation](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/docs/installation.md#install-command)
 
-
+```bash
 git clone https://github.com/kubernetes/autoscaler.git 
+```
+
 Cloning into 'autoscaler'...
 
-
-
+```bash
 % kubectl config use-context sel-vpa
+```
 Switched to context "sel-vpa".
+
+```bash
 % ./hack/vpa-up.sh
+```
 
-Sucess install
+Sample output from a successful install:
 
+```bash
 ...
 ...
 Generating certs for the VPA Admission Controller in /tmp/vpa-certs.
@@ -75,10 +87,11 @@ secret/vpa-tls-certs created
 Deleting /tmp/vpa-certs.
 service/vpa-webhook created
 deployment.apps/vpa-admission-controller created
+```bash
 
-Using instructions from here: https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/docs/installation.md#install-command
+These are the pods of the VPA:
 
-
+```bash
 % kubectl get pods -A
 NAMESPACE      NAME                                                     READY   STATUS    RESTARTS   AGE
 
@@ -86,9 +99,9 @@ NAMESPACE      NAME                                                     READY   
 kube-system    vpa-admission-controller-5d79d9f956-qsqhq                1/1     Running   0          2m48s
 kube-system    vpa-recommender-544df95d65-n4qjv                         1/1     Running   0          2m50s
 kube-system    vpa-updater-54ddf66b6d-smlnq                             1/1     Running   0          2m51s
+```
 
-
-## Allow VPA to export metrics:
+## Enable VPA metrics to be exported
 
 ### Step 1: Expose the VPA Recommender Metrics
 
@@ -96,16 +109,19 @@ By default, the VPA recommender exposes metrics on port 8942.
 
 You need to ensure there's a Kubernetes Service for the recommender pod that maps to this port.
 
+
+```bash
 kubectl apply -f ~/stuff/vpa-tracker/vpa-metrics-expose-svc.yaml
+```
 
 
 service/vpa-recommender created
 
 ### Step 2: For the Prometheus Operator, create a ServiceMonitor:
 
-
-Apply
+```bash
 kubectl apply -f ~/stuff/vpa-tracker/vpa-recommender-servicemonitor.yaml
+```
 
 
 ## Access different services:
@@ -287,7 +303,8 @@ Forwarding from [::1]:8080 -> 8080
 
 List of metrics in text:
 
-http://localhost:8080/metrics
+http://localhost:9090/metrics
+
 
 
 Prometheus Query UI:
