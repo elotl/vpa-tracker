@@ -1,28 +1,32 @@
 # Right-Sizing Your Kubernetes Pods with a Custom VPA Tracker
 
-Context and background of this VPA Tracker is available on this Elotl Blog:[VPA Tracker](https://www.elotl.co/blog/vpa-tracker)
+Context and background of this VPA Tracker is available on this Elotl blog post: [VPA Tracker](https://www.elotl.co/blog/vpa-tracker)
 
-In this README we provide detailed steps on how VPA Tracker stack was setup and used to track a sample deployment workload.
+In this README we provide detailed steps on how the VPA Tracker stack is setup and used to track a sample deployment workload.
 
 ## Create a Kubernetes Cluster
 
+We will use an EKS cluster for this example:
 ```bash
 eksctl create cluster -f  sel-vpa-ekscluster-luna.yaml
 ```
 
+Rename the cluster context for ease of use:
 ```bash
 kubectl config rename-context selvi@sel-vpa.us-west-1.eksctl.io sel-vpa
 ```
 
 ## Install Luna
 
+Install the Luna autoscaler:
 ```bash
 % cd luna/luna-v1.2.18/eks
 % ./deploy.sh --name sel-vpa --region us-west-1 --additional-helm-values "--set loggingVerbosity=5 --set telemetry=false --debug"
 ```
 
-## Install Kube-prometheus-stack
+## Install kube-prometheus-stack
 
+We use this open-source project to install Prometheus and Grafana: [kube-prometheus-stack project](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
 
 ```bash
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
@@ -30,7 +34,7 @@ helm repo update
 helm install prometheus prometheus-community/kube-prometheus-stack
 ```
 
-Sucess message after install:
+Here is a sample of the success message after installation:
 
 ```bash
 % helm install prometheus prometheus-community/kube-prometheus-stack
@@ -55,15 +59,13 @@ Access Grafana local instance:
 Visit https://github.com/prometheus-operator/kube-prometheus for instructions on how to create & configure Alertmanager and Prometheus instances using the Operator.
 ```
  
-## Install VPA
+## Install Vertical Pod Autoscaler
 
 We install VPA using instructions from here: [VPA Installation](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/docs/installation.md#install-command)
 
 ```bash
 git clone https://github.com/kubernetes/autoscaler.git 
 ```
-
-Cloning into 'autoscaler'...
 
 ```bash
 % kubectl config use-context sel-vpa
@@ -78,7 +80,6 @@ Sample output from a successful install:
 
 ```bash
 ...
-...
 Generating certs for the VPA Admission Controller in /tmp/vpa-certs.
 Certificate request self-signature ok
 subject=CN = vpa-webhook.kube-system.svc
@@ -87,7 +88,7 @@ secret/vpa-tls-certs created
 Deleting /tmp/vpa-certs.
 service/vpa-webhook created
 deployment.apps/vpa-admission-controller created
-```bash
+```
 
 These are the pods of the VPA:
 
@@ -101,61 +102,67 @@ kube-system    vpa-recommender-544df95d65-n4qjv                         1/1     
 kube-system    vpa-updater-54ddf66b6d-smlnq                             1/1     Running   0          2m51s
 ```
 
-## Enable VPA metrics to be exported
+## Export VPA metrics
 
 ### Step 1: Expose the VPA Recommender Metrics
 
 By default, the VPA recommender exposes metrics on port 8942.
 
-You need to ensure there's a Kubernetes Service for the recommender pod that maps to this port.
-
+We need to ensure that there is a Kubernetes Service for the recommender pod that maps to this port.
 
 ```bash
-kubectl apply -f ~/stuff/vpa-tracker/vpa-metrics-expose-svc.yaml
+kubectl apply -f vpa-tracker/vpa-metrics-expose-svc.yaml
 ```
-
-
+```bash
 service/vpa-recommender created
+```
 
 ### Step 2: For the Prometheus Operator, create a ServiceMonitor:
 
 ```bash
-kubectl apply -f ~/stuff/vpa-tracker/vpa-recommender-servicemonitor.yaml
+kubectl apply -f vpa-tracker/vpa-recommender-servicemonitor.yaml
 ```
 
 
-## Access different services:
+### Step 3: Access Prometheus and Grafana
 
 1. Prometheus service:
 
+```bash
 kubectl port-forward svc/prometheus-kube-prometheus-prometheus  9090:9090
+```
 
-Check to see the Prometheus UI in your browser:
+We can then access the Prometheus UI in a browser:
 http://localhost:9090/query
 
 
-2. See the list of kube state metrics being exported:
+2. Check kube state metrics being exported:
 
-% kubectl port-forward svc/prometheus-kube-state-metrics 8080:8080
+```bash
+kubectl port-forward svc/prometheus-kube-state-metrics 8080:8080
+```
 
+We can then access the Prometheus kube state metrics in a browser:
 http://localhost:8080/metrics
 
-I do see metrics but I don't see vpa_ metrics.
+3. Grafana service
 
-3. Viewing Grafana
-
+```bash
 kubectl port-forward svc/prometheus-grafana 3000:80
+```
+
+We can then access the Grafana UI in a browser:
 http://localhost:3000
 
+We can login with username `admin` and password determined from the following command:
 
-Login with username  admin and password from:
-
+```bash
 kubectl --namespace default get secrets prometheus-grafana -o jsonpath="{.data.admin-password}" | base64 -d ; echo
+```
 
+### VPA metrics
 
-## VPA metrics' examples
-
-Once Prometheus starts scraping, you'll find metrics like:
+Once Prometheus starts scraping, we will be able to find metrics such as these:
 
     vpa_target_container_recommendation
 
@@ -164,21 +171,38 @@ Once Prometheus starts scraping, you'll find metrics like:
     vpa_recommendation_memory_upper_bound
 
 
-## Workload creation
+## Example Workload
 
-selvik@Selvis-MacBook-Pro vpa-tracker % kubectl apply -f workload-c.yaml 
+We use a sample workload in this repo to illustrate VPA and vpa-tracker operation.
+
+Let's first create the workload:
+```bash
+kubectl apply -f workload-c.yaml 
+```
+
+```bash
 verticalpodautoscaler.autoscaling.k8s.io/workload-c-vpa created
 deployment.apps/workload-c created
+```
 
-### Check VPA object
-selvik@Selvis-MacBook-Pro vpa-tracker % kubectl get vpa
+### VPA object
+
+```bash
+kubectl get vpa
+```
+
+```bash
 NAME             MODE   CPU   MEM   PROVIDED   AGE
 workload-c-vpa   Auto               False      43s
-
+```
 
 ### Check all pods 
 
-selvik@Selvis-MacBook-Pro vpa-tracker % kubectl get pods
+```bash
+kubectl get pods
+```
+
+```bash
 NAME                                                     READY   STATUS              RESTARTS   AGE
 alertmanager-prometheus-kube-prometheus-alertmanager-0   2/2     Running             0          117m
 prometheus-grafana-9676cd6bf-nqj7p                       3/3     Running             0          117m
@@ -189,25 +213,35 @@ prometheus-prometheus-node-exporter-bmwkm                0/1     ContainerCreati
 prometheus-prometheus-node-exporter-dwgf8                1/1     Running             0          117m
 workload-c-6884ffcd9d-2xwxp                              0/1     Pending             0          49s
 workload-c-6884ffcd9d-57kh6                              0/1     Pending             0          49s
+```
 
+### Check Luna auto-scaling
 
-## Check luna auto-scaling
-selvik@Selvis-MacBook-Pro vpa-tracker % kubectl get nodes
+```bash
+kubectl get nodes
+```
+
+We see that a new node has been created to accomodate the workload:
+```bash
 NAME                                            STATUS   ROLES    AGE    VERSION
 ip-192-168-116-111.us-west-1.compute.internal   Ready    <none>   20s    v1.32.3-eks-473151a
 ip-192-168-54-249.us-west-1.compute.internal    Ready    <none>   134m   v1.32.3-eks-473151a
+```
 
+### VPA metrics exporter
 
-## VPA metrics exporter
+The following commands create the VPA metrics exporter:
 
+```bash
 % kubectl create namespace monitoring
+```
+```bash
 namespace/monitoring created
+```
 
-
-% kubectl apply -f vpa-metrics-exporter/dockerhubsecret-default.yaml
-
-
+```bash
 % kubectl apply -f vpa-metrics-exporter/vpa_exporter_default.yaml
+```
 
 ```bash
 deployment.apps/vpa-exporter created
@@ -218,15 +252,11 @@ clusterrole.rbac.authorization.k8s.io/vpa-exporter-role unchanged
 clusterrolebinding.rbac.authorization.k8s.io/vpa-exporter-rolebinding unchanged
 ```
 
+We add labels to the metrics exporter:
 
-### Add labels
-
+```bash
 kubectl label servicemonitor vpa-exporter  release=kube-prometheus-stack --overwrite
-
-
-## CHECKING
-
-
+```
 
 ### Check VPA exporter
 
@@ -235,10 +265,7 @@ kubectl label servicemonitor vpa-exporter  release=kube-prometheus-stack --overw
 Forwarding from 127.0.0.1:8080 -> 8080
 ```
 
-
-Check if vpa exporter is exporting the new VPA metrics
-
-
+Check if vpa exporter is exporting the new VPA metrics:
 ```bash
 # HELP vpa_cpu_target_millicores VPA recommended target CPU for container (in millicores)
 # TYPE vpa_cpu_target_millicores gauge
@@ -254,37 +281,48 @@ vpa_memory_target_bytes{container="workload-c",namespace="default",vpa_name="wor
 vpa_memory_uncapped_target_bytes{container="workload-c",namespace="default",vpa_name="workload-c-vpa"} 262144.0
 ```
 
-### Edit Prometheus Custom Resource
+### Update Prometheus Custom Resource
 
-********************
+The Prometheus custom resource is updated so it has the right labels:
+
+```bash
 kubectl label namespace default monitoring-key=enabled
-********************
-Before of the Prometheus CRD:
+```
 
+Before editing the Prometheus CRD:
+
+```bash
   serviceMonitorNamespaceSelector:  {}
   serviceMonitorSelector:
     matchLabels:
       release: prometheus
+```
 
-After:
+After editing:
 
+```bash
   serviceMonitorNamespaceSelector:
     matchLabels:
       monitoring-key: enabled
   serviceMonitorSelector:
     matchLabels:
       release: kube-prometheus-stack
+```
 
-For these new settings to come into effect, delete this pod.
+For these new settings to come into effect, we delete the Prometheus pod as shown below:
 
+```bash
 kubectl delete pod prometheus-prometheus-kube-prometheus-prometheus-0
-
+```
 
 ### Checking VPA metrics
 
 
 ```bash
 % kubectl get svc
+```
+
+```bash
 NAME                                      TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
 alertmanager-operated                     ClusterIP   None             <none>        9093/TCP,9094/TCP,9094/UDP   4h13m
 kubernetes                                ClusterIP   10.100.0.1       <none>        443/TCP                      4h36m
@@ -296,16 +334,16 @@ prometheus-kube-state-metrics             ClusterIP   10.100.185.222   <none>   
 prometheus-operated                       ClusterIP   None             <none>        9090/TCP                     4h13m
 prometheus-prometheus-node-exporter       ClusterIP   10.100.134.255   <none>        9100/TCP                     4h13m
 vpa-exporter                              ClusterIP   10.100.140.15    <none>        8080/TCP                     43m
-selvik@Selvis-MacBook-Pro vpa-tracker % kubectl port-forward svc/prometheus-kube-prometheus-prometheus 9090
+```
+
+```bash
+kubectl port-forward svc/prometheus-kube-prometheus-prometheus 9090
 Forwarding from 127.0.0.1:8080 -> 8080
 Forwarding from [::1]:8080 -> 8080
 ```
 
-List of metrics in text:
-
+We can view a list of metrics in text:
 http://localhost:9090/metrics
-
-
 
 Prometheus Query UI:
 http://localhost:9090/query
@@ -313,8 +351,5 @@ http://localhost:9090/query
 Prometheus Targets UI:
 http://localhost:9090/targets
 
-
-Look for your vpa-exporter under "ServiceMonitor / monitoring / vpa-exporter".
-
-Check that the status is shown as UP.
+We now look for the `vpa-exporter` under "ServiceMonitor / monitoring / vpa-exporter" and ensure that it's status is shown as UP.
 
