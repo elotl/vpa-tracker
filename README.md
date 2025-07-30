@@ -171,7 +171,7 @@ Once Prometheus starts scraping, we will be able to find metrics such as these:
     vpa_recommendation_memory_upper_bound
 
 
-## Example Workload
+## Deploying a sample workload
 
 We use a sample workload in this repo to illustrate VPA and vpa-tracker operation.
 
@@ -185,7 +185,9 @@ verticalpodautoscaler.autoscaling.k8s.io/workload-c-vpa created
 deployment.apps/workload-c created
 ```
 
-### VPA object
+### VPA Custom Resource
+
+Let's view the VPA custom resource object. Initially there CPU and memory recommendations are empty since there is not yet sufficient data.
 
 ```bash
 kubectl get vpa
@@ -196,7 +198,7 @@ NAME             MODE   CPU   MEM   PROVIDED   AGE
 workload-c-vpa   Auto               False      43s
 ```
 
-### Check all pods 
+### Check pods of the kube-prometheus-stack
 
 ```bash
 kubectl get pods
@@ -213,6 +215,16 @@ prometheus-prometheus-node-exporter-bmwkm                0/1     ContainerCreati
 prometheus-prometheus-node-exporter-dwgf8                1/1     Running             0          117m
 workload-c-6884ffcd9d-2xwxp                              0/1     Pending             0          49s
 workload-c-6884ffcd9d-57kh6                              0/1     Pending             0          49s
+```
+
+### VPA custom resource with recommendations
+
+Given below is an example of the VPA object along with CPU and memory recommendations:
+
+```bash
+% kubectl get vpa
+NAME             MODE   CPU    MEM       PROVIDED   AGE
+workload-c-vpa   Auto   163m   262144k   True       4d19h
 ```
 
 ### Check Luna auto-scaling
