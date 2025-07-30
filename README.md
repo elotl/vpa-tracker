@@ -353,3 +353,13 @@ http://localhost:9090/targets
 
 We now look for the `vpa-exporter` under "ServiceMonitor / monitoring / vpa-exporter" and ensure that it's status is shown as UP.
 
+### Custom Grafana Panels
+
+Using the exported VPA metrics, we can setup custom panels in Grafana. This will allow us to monitor both current CPU usage as well as VPA recommendations over time.
+
+Shown below is an example of a custom panel illustrating a scale up of CPU usage:
+
+![Custom Grafana panel for VPA Tracker](vpa-tracker-scaleup.jpg "VPA Tracker Custom Grafana Panel")
+
+
+
