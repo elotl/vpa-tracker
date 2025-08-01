@@ -17,11 +17,13 @@ vpa-weekly.rules.yaml:
 - This stores a recording rule
 - The interval of 168hours corresponds to 7 days
 
-selvik@Selvis-MacBook-Pro vpa-alerts % kubectl apply -f  vpa-weekly.rules.yaml
+```bash
+kubectl apply -f  vpa-weekly.rules.yaml
 prometheusrule.monitoring.coreos.com/vpa-weekly configured
+```
 
 ```bash
-% kubectl apply -f vpa-weekly-alert.rules.yaml
+kubectl apply -f vpa-weekly-alert.rules.yaml
 prometheusrule.monitoring.coreos.com/vpa-weekly-alert created
 ```
 
